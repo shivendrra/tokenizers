@@ -24,24 +24,17 @@ these kinds of scammers are. Some of the most common
 government scams include Covid scams, social security scams, and as you're about to see, IRS scams.
 """
 
-tokens = text.encode('utf-8')
-tokens = list(map(int, tokens))
-
 def get_stats(ids):
   counts = {}
   for pair in zip(ids, ids[1:]):
     counts[pair] = counts.get(pair, 0) + 1
   return counts
 
-stats = get_stats(tokens)
-top_pair = max(stats, key=stats.get)
-least_pair = min(stats, key=stats.get)
-
 def merge(ids, pair, idx):
   new_ids = []
   i = 0
   while i < len(ids):
-    if i < len(ids) and ids[i] == pair[0] and ids[i+1] == pair[1]:
+    if i+1 < len(ids) and ids[i] == pair[0] and ids[i+1] == pair[1]:
       new_ids.append(idx)
       i += 2
     else:
@@ -49,7 +42,32 @@ def merge(ids, pair, idx):
       i += 1
   return new_ids
 
-vocab_sie = 350
+def decode(ids):
+  tokens = b"".join(vocab[idx] for idx in ids)
+  text = tokens.decode('utf-8', errors='replace')
+  return text
+
+def encode(text):
+  tokens = list(text.encode('utf-8'))
+  while True:
+    stats = get_stats(tokens)
+    pair = min(stats, key=lambda p: merges.get(p, float('inf')))
+    if pair not in merges:
+      break
+    idx = merges[pair]
+    tokens = merge(tokens, pair, idx)
+  return tokens
+
+import os
+
+current_directory = os.path.dirname(os.path.realpath(__file__))
+os.chdir(current_directory)
+
+with open('../captions.txt', 'r', encoding='utf-8') as file:
+  new_text = file.read()
+
+tokens = list(new_text.encode('utf-8'))
+vocab_sie = 600
 n_merges = vocab_sie - 256
 ids = list(tokens)
 
@@ -62,6 +80,14 @@ for i in range(n_merges):
   ids = merge(ids, pair, idx)
   merges[pair] = idx
 
+vocab = {idx: bytes([idx]) for idx in range(256)}
+for (p0, p1), idx in merges.items():
+  vocab[idx] = vocab[p0] + vocab[p1]
+
+
 print("tokens length", len(tokens))
 print("ids lentgh", len(ids))
 print(f"compression ratio: {len(tokens)/len(ids):.2f}x")
+print("len tokens: ", len(encode(text)))
+print("len text: ", len(decode(encode(text))))
+print(decode(encode(text)) == text)
