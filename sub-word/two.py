@@ -58,7 +58,7 @@ def merge(ids, pair, idx):
     else:
       new_ids.append(ids[i])
       i += 1
-    return new_ids
+  return new_ids
 
 def apply_regex(text, pattern):
   text = re.findall(pattern, text)
@@ -79,34 +79,20 @@ def encode(text, regex_pattern):
     tokens = merge(tokens, pair, idx)
   return tokens
 
-# merges = {}
-# merged = encode(text, regex_pattern)
-# print(merged)
-
-tokens = apply_regex(text, regex_pattern)
-vocab_sie = 600
-n_merges = vocab_sie - 256
-ids = list(tokens)
-print("ids", ids)
-
 merges = {}
+vocab_size = 656
+n_merges = vocab_size - 256
+token_list = apply_regex(text, regex_pattern)
+ids = []
+
+for words in token_list:
+  new_token = list(words.encode('utf-8'))
+  ids.extend(new_token)
+
 for i in range(n_merges):
-  # ids = apply_regex(text, regex_pattern)
   stats = get_stats(ids)
   pair = max(stats, key=stats.get)
   idx = 256 + i
-  print(f"mergeing {pair} into a new token {idx}")
+  # print(f"mergeing {pair} into a new token {idx}")
   ids = merge(ids, pair, idx)
   merges[pair] = idx
-
-vocab = {idx: bytes([idx]) for idx in range(256)}
-for (p0, p1), idx in merges.items():
-  vocab[idx] = vocab[p0] + vocab[p1]
-
-
-print("tokens length", len(tokens))
-print("ids lentgh", len(ids))
-print(f"compression ratio: {len(tokens)/len(ids):.2f}x")
-# print("len tokens: ", len(encode(text)))
-# print("len text: ", len(decode(encode(text))))
-# print(decode(encode(text)) == text)
