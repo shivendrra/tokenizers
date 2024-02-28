@@ -1,7 +1,16 @@
+import os
+current_directory = os.path.dirname(os.path.realpath(__file__))
+os.chdir(current_directory)
+
 text = """
-- Hmm. Two clear indicators that your recruiter is a criminal. I'm sorry, baby bro. I know how much you love pianos. - I already gave the guy the $500. I sent him a payment digitally. (footsteps knock) - Here, Jordan, why don't you come with me?
-I'll show you how to report the scam to the FTC. Then we'll go over whichever bank or payment platform you used also. (Loretta sighs) (tense music) - Transfer receipts. This guy's a professional and he isn't operating alone. Travel in 88. This isn't over.
-- With so many folks doing their banking online, it's easier than ever for criminals to try and impersonate banks. In fact, this show was inspired by Steven's encounter with a scammer. - It's true. But instead
+- Hmm. Two clear indicators that
+your recruiter is a criminal. I'm sorry, baby bro. I know
+how much you love pianos. - I already gave the guy the $500. I sent him a payment digitally. (footsteps knock) - Here, Jordan, why
+don't you come with me? I'll show you how to
+report the scam to the FTC. Then we'll go over whichever
+bank or payment platform you used also. (Loretta sighs) (tense music) - Transfer receipts. This guy's a professional
+and he isn't operating alone. Travel in 88. This isn't over. - With so many folks doing
+their banking online, it's easier than ever for criminals to try and impersonate banks. In fact, this show was inspired by Steven's encounter with a scammer. - It's true. But instead
 of bringing me down, it fueled my passion. - You know, Steven came to me and he said, "Betsy, I know you retired early and moved to an RV in the Salt Flats, but I've got a thrilling idea for a show." And here we are. (both laugh) - You're my twin? - Yeah. (both laugh) - Let's check out how the squad deals with a banking scam. (calm music) - Romance, man. What a bunch of baloney. - Ah, I think it's sweet. - There's nothing sweet
 about tender moments and grand gestures, Skip. It's like get your own self-esteem. - Oh, come on, Ace. You telling me that
 you've never been in love? - My savings account compromised? No, I didn't authorize
@@ -20,79 +29,75 @@ government scams include Covid scams, social security scams, and as you're about
 """
 
 import regex as re
+from collections import Counter
 
-r"""
-  ## space is merged with each word, before it as a prefix
-  ## a litlle smaller than pattern2
-  regex_pattern1: '(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+
-  
-  ## space is added as a preffix to each word, retains all the initial words
-  ## smaller than pattern3
-  regex_pattern2: '(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+
+class BPETokenizer:
+    def __init__(self, vocab_size=1000, special_tokens=["[UNK]", "[PAD]", "[CLS]", "[SEP]"]):
+        self.vocab_size = vocab_size
+        self.special_tokens = special_tokens
+        self.regex_pattern = re.compile(r"""'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+ | ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+""")
 
-  ## space is considered a separate token, all words remain original, no loss of words
-  ## largest in length
-  regex_pattern3: 's|'t|'re|'ve|'m|'ll|'d|[\w']+|[^\s\w\d]+|\s+(?!\S)|\s+
-  
-  ## spaces are added as a prefix to the words, but some words are missing hence doesn't retains original text
-  ## smallest in length, due to some lost words
-  regex_pattern4: 's|'t|'re|'ve|'m|'ll|'d| ?\p{L}+ | ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+
-"""
+    def _build_vocab(self, text):
+      token_counts = Counter(text)
+      vocab = {token: count for token, count in token_counts.items() if token in self.special_tokens}
+      if not vocab:
+          return self.special_tokens
+      while len(vocab) < self.vocab_size:
+          most_common_pair = max(self._get_token_pairs(vocab), key=vocab.get)
+          if most_common_pair not in vocab:
+              break
+          new_token = "".join(most_common_pair)
+          vocab[new_token] = vocab[most_common_pair[0]] + vocab[most_common_pair[1]]
+          del vocab[most_common_pair[0]]
+          del vocab[most_common_pair[1]]
+      return vocab
 
-regex_pattern = re.compile(r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+""")
+    def _get_token_pairs(self, vocab):
+        token_pairs = Counter()
+        for token, count in vocab.items():
+            token_chars = token.split()
+            for i in range(len(token_chars) - 1):
+                token_pairs[token_chars[i], token_chars[i + 1]] += count
+        return token_pairs
 
+    def fit(self, text):
+        tokenized_text = self.regex_pattern.findall(text.lower())
+        self.vocab = self._build_vocab(tokenized_text)
 
-def get_stats(ids):
-  counts = {}
-  for pair in zip(ids, ids[1:]):
-    counts[pair] = counts.get(pair, 0) + 1
-  return counts
+    def tokenize(self, text):
+        tokenized_text = self.regex_pattern.findall(text.lower())
+        tokens = []
+        for token in tokenized_text:
+            if token in self.vocab:
+                tokens.append(token)
+            else:
+                tokens.extend(self._encode_token(token))
+        return tokens
 
-def merge(ids, pair, idx):
-  new_ids = []
-  i = 0
-  while i < len(ids):
-    if i+1 < len(ids) and ids[i] == pair[0] and ids[i+1] == pair[1]:
-      new_ids.append(idx)
-      i += 2
-    else:
-      new_ids.append(ids[i])
-      i += 1
-  return new_ids
+    def _encode_token(self, token):
+        if len(token) == 1:
+            return [token]
+        encoded_tokens = []
+        char_buffer = ""
+        for char in token:
+            char_buffer += char
+            if char_buffer in self.vocab or len(char_buffer) == 1:
+                encoded_tokens.append(char_buffer)
+                char_buffer = ""
+        return encoded_tokens
 
-def apply_regex(text, pattern):
-  text = re.findall(pattern, text)
-  return text
+    def decode(self, tokens):
+        text = "".join(tokens)
+        return text
 
-def encode(text, regex_pattern):
-  outputs = apply_regex(text, regex_pattern)
-  tokens = []
-  for word in outputs:
-    token = list(word.encode('utf-8'))
-    tokens.extend(token)
-  while True:
-    stats = get_stats(tokens)
-    pair = max(stats, key=lambda p: merges.get(p, float('inf')))
-    if pair not in merges:
-      break
-    idx = merges[pair]
-    tokens = merge(tokens, pair, idx)
-  return tokens
+with open('../captions.txt', 'r', encoding='utf-8') as file:
+  train_data = file.read()
 
-merges = {}
-vocab_size = 656
-n_merges = vocab_size - 256
-token_list = apply_regex(text, regex_pattern)
-ids = []
+bpe_tokenizer = BPETokenizer(vocab_size=1000)
+bpe_tokenizer.fit(train_data)
+encoded_tokens = bpe_tokenizer.tokenize(text)
+decoded_text = bpe_tokenizer.decode(encoded_tokens)
 
-for words in token_list:
-  new_token = list(words.encode('utf-8'))
-  ids.extend(new_token)
-
-for i in range(n_merges):
-  stats = get_stats(ids)
-  pair = max(stats, key=stats.get)
-  idx = 256 + i
-  # print(f"mergeing {pair} into a new token {idx}")
-  ids = merge(ids, pair, idx)
-  merges[pair] = idx
+print("Encoded Tokens:", encoded_tokens)
+print("Decoded Text:", decoded_text)
+print(decoded_text==text)
