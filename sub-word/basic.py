@@ -1,3 +1,9 @@
+"""
+  basic bpe tokenizer with encoder and decoder class
+  doesn't use regex and special tokens
+"""
+
+
 text = """
 - Hmm. Two clear indicators that your recruiter is a criminal. I'm sorry, baby bro. I know how much you love pianos. - I already gave the guy the $500. I sent him a payment digitally. (footsteps knock) - Here, Jordan, why don't you come with me?
 I'll show you how to report the scam to the FTC. Then we'll go over whichever bank or payment platform you used also. (Loretta sighs) (tense music) - Transfer receipts. This guy's a professional and he isn't operating alone. Travel in 88. This isn't over.
@@ -19,32 +25,10 @@ these kinds of scammers are. Some of the most common
 government scams include Covid scams, social security scams, and as you're about to see, IRS scams.
 """
 
-import regex as re
 import os
 
-current_directory = os.path.dirname(os.path.realpath(__file__))
+current_directory = os.path.dirname(os.path.relpath(__file__))
 os.chdir(current_directory)
-
-r"""
-  ## space is merged with each word, before it as a prefix
-  ## a litlle smaller than pattern2
-  regex_pattern1: '(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+
-  
-  ## space is added as a preffix to each word, retains all the initial words
-  ## smaller than pattern3
-  regex_pattern2: '(?:[sdmt]|ll|ve|re)| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+
-
-  ## space is considered a separate token, all words remain original, no loss of words
-  ## largest in length
-  regex_pattern3: 's|'t|'re|'ve|'m|'ll|'d|[\w']+|[^\s\w\d]+|\s+(?!\S)|\s+
-  
-  ## spaces are added as a prefix to the words, but some words are missing hence doesn't retains original text
-  ## smallest in length, due to some lost words
-  regex_pattern4: 's|'t|'re|'ve|'m|'ll|'d| ?\p{L}+ | ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+
-"""
-
-regex_pattern = re.compile(r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+""")
-
 
 def get_stats(ids):
   counts = {}
@@ -64,22 +48,12 @@ def merge(ids, pair, idx):
       i += 1
   return new_ids
 
-def apply_regex(text, pattern):
-  text = re.findall(pattern, text)
-  return text
-
-def encode(text, regex_pattern):
-  outputs = apply_regex(text, regex_pattern)
-  tokens = []
-  for word in outputs:
-    token = list(word.encode('utf-8'))
-    tokens.extend(token)
-  
+def encode(text):
+  tokens = list(text.encode('utf-8'))
   while True:
     stats = get_stats(tokens)
-    pair = max(stats, key=lambda p: merges.get(p, float('inf')))
+    pair = min(stats, key=lambda p: merges.get(p, float('inf')))
     if pair not in merges:
-      print('pair not in merges')
       break
     idx = merges[pair]
     tokens = merge(tokens, pair, idx)
@@ -90,23 +64,15 @@ def decode(ids):
   text = tokens.decode('utf-8', errors='replace')
   return text
 
+tokens = list(text.encode('utf-8'))
+vocab_sie = 456
+n_merges = vocab_sie - 256
+ids = list(tokens)
+
 merges = {}
-vocab_size = 1556
-n_merges = vocab_size - 256
-token_list = apply_regex(text, regex_pattern)
-ids = []
-
-for words in token_list:
-  new_token = list(words.encode('utf-8'))
-  ids.extend(new_token)
-
 for i in range(n_merges):
   stats = get_stats(ids)
-  pair = max(stats, key=stats.get, default=None)
-  if pair is None:
-    print('vocab_size would cause errors!!')
-    break
-  
+  pair = max(stats, key=stats.get)
   idx = 256 + i
   ids = merge(ids, pair, idx)
   merges[pair] = idx
@@ -115,16 +81,16 @@ vocab = {idx: bytes([idx]) for idx in range(256)}
 for (p0, p1), idx in merges.items():
   vocab[idx] = vocab[p0] + vocab[p1]
 
-# new_tok = []
-# for i in ids:
-#   tok = decode(i)
-#   new_tok.append(tok)
+with open("sample.vocab", "w", encoding='utf-8') as outfile:
+  outfile.write(str(vocab))
 
-# print(new_tok)
+print("tokens length", len(tokens))
+print("ids lentgh", len(ids))
+print(f"compression ratio: {len(tokens)/len(ids):.2f}x")
+print("len tokens: ", len(encode(text)))
+print("len text: ", len(decode(encode(text))))
+print(decode(encode(text)) == text)
 
-print("tokens length", len(token_list))
-print("ids lentgh", ids)
-print(f"compression ratio: {len(token_list)/len(ids):.2f}x")
-print("len tokens: ", len(encode(text, regex_pattern)))
-print("len text: ", len(decode(encode(text, regex_pattern))))
-print(decode(encode(text, regex_pattern)) == text) 
+# ---- test string ----
+print(encode('hello my name was'))
+print(decode(encode('hello my name was')))
