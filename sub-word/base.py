@@ -133,7 +133,7 @@ def save_model(file_name):
     - vocab file is just a pretty printed version for human inspection only
   """
   model_file = file_name + ".model"
-  inverted_merges = {idx: pair for pair, idx in self.merges.items()}
+  inverted_merges = {idx: pair for pair, idx in merges.items()}
   with open(model_file, 'w') as f:
     f.write("minibpe v1\n")
     f.write(f"{pattern}\n")
