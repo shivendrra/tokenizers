@@ -1,6 +1,4 @@
 import regex as re
-import unicodedata
-import json
 import os
 current_dir = os.path.dirname(os.path.realpath(__file__))
 os.chdir(current_dir)
@@ -28,7 +26,7 @@ class RegexTokenizer:
     for i in range(n_merges):
       stats = {}
       for chunk_ids in ids:
-        stats = get_stats()
+        stats = get_stats(chunk_ids, stats)
       
       pair = max(stats, key=stats.get)
       idx = 256 + i
