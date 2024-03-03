@@ -10,7 +10,7 @@ class RegexTokenizer:
   def __init__(self, pattern=None):
     super().__init__()
     self.pattern = regex_pattern if pattern is None else pattern
-    self.complied_pattern = re.compile(self.pattern)
+    self.compiled_pattern = re.compile(self.pattern)
     self.special_tokens = {}
     self.inverse_special_tokens = {}
   
@@ -18,8 +18,10 @@ class RegexTokenizer:
     assert vocab_size >= 256
     n_merges = vocab_size - 256
 
-    text_chunks = re.findall(self.complied_pattern, text)
-    ids = [list(ch.encode('utf-8') for ch in text_chunks)]
+    # text_chunks = re.findall(self.compiled_pattern, text)
+    # ids = [list(ch.encode('utf-8') for ch in text_chunks)]
+    tokens = list(text.encode('utf-8'))
+    ids = [tokens]
 
     merges = {}
     vocab = {idx: bytes([idx]) for idx in range(256)}
@@ -31,14 +33,15 @@ class RegexTokenizer:
       pair = max(stats, key=stats.get)
       idx = 256 + i
       ids = [merge(chunk_ids, pair, idx) for chunk_ids in ids]
-      merges[pair] = ids
-      vocab[idx] = vocab[pair[0]] + vocab[pair[1]]
-
+      merges[pair] = idx
+    
       if verbose:
         pass
+    for (p0, p1), idx in merges.items():
+      vocab[idx] = vocab[p0] + vocab[p1]
     
-    self.merges = merges
     self.vocab = vocab
+    self.merges = merges
   
   def register_special_token(self, special_tokens):
     self.special_tokens = special_tokens
@@ -61,7 +64,7 @@ class RegexTokenizer:
   def _encode_chunk(self, text_bytes):
     ids = list(text_bytes)
     while len(ids) > 2:
-      stats = get_stats()
+      stats = get_stats(ids)
       pair = min(stats, key= lambda p: self.merges.get(p, float('inf')))
       if pair not in self.merges:
         break

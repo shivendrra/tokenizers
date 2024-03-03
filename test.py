@@ -27,7 +27,7 @@ these kinds of scammers are. Some of the most common
 government scams include Covid scams, social security scams, and as you're about to see, IRS scams.
 """
 
-from miniBPE import RegexTokenizer, GPT4tokenizer
+from miniBPE import RegexTokenizer, GPT4tokenizer, save_model
 import timeit
 
 llama_text = """
@@ -51,17 +51,17 @@ special_tokens = {
   '<|fim_suffix|>': 100260,
   '<|endofprompt|>': 100276
 }
-
 os.makedirs('../models', exist_ok=True)
 time01 = timeit.default_timer()
 
-name = 'regex'
+name = '../models/regex'
 tokenizer = RegexTokenizer()
 tokenizer.train(text, 512, verbose=True)
-prefix = os.path.join('.model', name)
-tokenizer.save(prefix)
+save_model(name)
 
 time02 = timeit.default_timer()
 
 test_str = "Hello, what's your name?"
-print(f'total time taken: {(time02 - time01) / 60} mins')
+print(f'total time taken: {(time02 - time01)} secs')
+print(tokenizer.encode(test_str))
+print(tokenizer.decode(tokenizer.encode(test_str)))
