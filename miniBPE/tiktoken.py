@@ -1,6 +1,6 @@
 import tiktoken
 from .regex import RegexTokenizer
-from .base import build_vocab
+from .base import build_vocab, render_token
 
 def bpe(mergeable_ranks, token, max_rank):
   parts = [bytes([b]) for b in token]
@@ -20,18 +20,22 @@ def bpe(mergeable_ranks, token, max_rank):
   return parts
 
 def recover_merges(mergeable_ranks):
-  merges = {}
-  for token, rank in mergeable_ranks.items():
-    if len(token) == 1:
-      continue
-    pair = tuple(bpe(mergeable_ranks, token, rank))
-    assert len(pair) == 2
-
-    ix0 = mergeable_ranks[pair[0]]
-    ix1 = mergeable_ranks[pair[1]]
-    merges[(ix0, ix1)] = rank
-
-  return merges
+    merges = {}
+    for token, rank in mergeable_ranks.items():
+        if len(token) == 1:
+            continue
+        parts = bpe(mergeable_ranks, token, rank)
+        if len(parts) != 2:
+            continue
+        pair = tuple(parts)
+        try:
+            ix0 = mergeable_ranks.get(pair[0])
+            ix1 = mergeable_ranks.get(pair[1])
+            if ix0 is not None and ix1 is not None:
+                merges[(ix0, ix1)] = rank
+        except KeyError:
+            continue
+    return merges
 
 GPT4_SPLIT_PATTERN = r"""'(?i:[sdmt]|ll|ve|re)|[^\r\n\p{L}\p{N}]?+\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]++[\r\n]*|\s*[\r\n]|\s+(?!\S)|\s+"""
 GPT4_SPECIAL_TOKENS = {
@@ -50,9 +54,21 @@ class GPT4tokenizer(RegexTokenizer):
     self.merges = recover_merges(mergeable_ranks)
     self.pattern = pattern
 
+    # vocab = {idx: bytes([idx]) for idx in range(256)}
+    # for (p0, p1), idx in self.merges.items():
+    #   vocab[idx] = vocab[p0] + vocab[p1]
+    # self.vocab = vocab
+
+    # self.byte_shuffle = {i: mergeable_ranks[bytes([i])] for i in range(256)}
+    # self.inverse_byte_shuffle = {v: k for k, v in self.byte_shuffle.items()}  
+    # self.register_special_tokens = special_tokens
+
     vocab = {idx: bytes([idx]) for idx in range(256)}
     for (p0, p1), idx in self.merges.items():
-      vocab[idx] = vocab[p0] + vocab[p1]
+      try:
+        vocab[idx] = vocab[p0] + vocab[p1]
+      except KeyError:
+        continue
     self.vocab = vocab
 
     self.byte_shuffle = {i: mergeable_ranks[bytes([i])] for i in range(256)}
@@ -92,11 +108,11 @@ class GPT4tokenizer(RegexTokenizer):
     vocab_file = file_prefix + ".vocab"
     with open(vocab_file, 'w') as f:
       for idx, token in self.vocab.items():
-        s = self.render_token(token)
+        s = render_token(token)
         if idx in inverted_merges:
           idx0, idx1 = inverted_merges[idx]
-          s0 = self.render_token(self.vocab[idx0])
-          s1 = self.render_token(self.vocab[idx1])
+          s0 = render_token(self.vocab[idx0])
+          s1 = render_token(self.vocab[idx1])
           f.write(f"[{s0}][{s1}] -> [{s}] {idx}\n")
         else:
           f.write(f"[{s}] {idx}\n")
@@ -133,8 +149,6 @@ class GPT4tokenizer(RegexTokenizer):
     return vocab
 
   def save_vocab(self, vocab_file):
-    from .base import render_token
-
     vocab = {idx: bytes([self.inverse_byte_shuffle[idx]]) for idx in range(256)}
     for (p0, p1), idx in self.merges.items():
       vocab[idx] = vocab[p0] + vocab[p1]

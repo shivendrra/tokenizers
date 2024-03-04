@@ -55,13 +55,13 @@ os.makedirs('../models', exist_ok=True)
 time01 = timeit.default_timer()
 
 name = '../models/regex'
-tokenizer = RegexTokenizer()
-tokenizer.train(text, 512, verbose=True)
-save_model(name)
+tokenizer = GPT4tokenizer()
+# tokenizer.train(text, 512, verbose=True)
+# save_model(name)
 
 time02 = timeit.default_timer()
 
 test_str = "Hello, what's your name?"
 print(f'total time taken: {(time02 - time01)} secs')
 print(tokenizer.encode(test_str))
-print(tokenizer.decode(tokenizer.encode(test_str)))
+print(llama_text==tokenizer.decode(tokenizer.encode(llama_text)))
