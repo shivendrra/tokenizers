@@ -37,10 +37,10 @@ with open('../captions.txt', 'r', encoding='utf-8') as f:
 time01 = timeit.default_timer()
 name = '../models/basicCharMap'
 
-tokenizer = BasicTokenizer(train_text)
-tokenizer.load_model('../models/basicCharMap.model')
-# tokenizer.train(n_merges=512)
-# tokenizer.save_model(name)
+tokenizer = BasicTokenizer(text)
+# tokenizer.load_model('../models/basicCharMap.model')
+tokenizer.train(n_merges=512)
+tokenizer.save_model(name)
 
 time02 = timeit.default_timer()
 
