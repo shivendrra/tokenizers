@@ -31,7 +31,7 @@ from miniBPE import BasicTokenizer
 import timeit
 os.makedirs('../models', exist_ok=True)
 
-with open('../captions.txt', 'r', encoding='utf-8') as f:
+with open('../big_data_v1.txt', 'r', encoding='utf-8') as f:
   train_text = f.read()
 
 time01 = timeit.default_timer()
