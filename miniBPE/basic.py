@@ -6,6 +6,7 @@
 """
 
 from tqdm import tqdm
+import multiprocessing
 import os
 current_dir = os.path.dirname(os.path.realpath(__file__))
 os.chdir(current_dir)
@@ -77,7 +78,35 @@ class BasicTokenizer:
     self.vocab = self._build_vocab(merges)
     self.merges = merges
     return self.vocab, self.merges
-  
+
+  def _train_merge(self, merge_idx):
+    stats = self._get_stats(self.ids)
+    pair = max(stats, key=stats.get)
+    idx = self.vocab_size + merge_idx
+    ids = self._merge(self.ids, pair, idx)
+    return pair, ids
+
+  def train_parallel(self, target_vocab, num_processes=None):
+    tokens = list(self._encode(self.train_data))
+    self.ids = list(tokens)
+    n_merges = target_vocab - self.vocab_size
+    merge_indices = range(n_merges)
+
+    with multiprocessing.Pool(processes=num_processes) as pool:
+      results = list(tqdm(pool.imap(self._train_merge, merge_indices), total=n_merges, desc='Training the tokenizer\t'))
+
+    # with multiprocessing.Pool(processes=num_processes) as pool:
+    #   with tqdm(total=n_merges, desc='Training the tokenizer\t') as pbar:
+    #     results = list(pool.imap(self._train_merge, merge_indices))
+    #     pbar.update(n_merges)
+
+    merges = {pair: ids for pair, ids in results}
+
+    self.vocab = self._build_vocab(merges)
+    self.merges = merges
+
+    return self.vocab, self.merges
+
   def encode(self, en_text):
     tokens = list(self._encode(en_text))
     while True:

@@ -1,3 +1,5 @@
 # .gitignore
 .env
 big_data_v1.txt
+large_data.txt
+train files
