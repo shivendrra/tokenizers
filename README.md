@@ -1,4 +1,4 @@
-# tokenizer
+# tokenizers
 
 This repository contains per-character, sub-word and word level tokenizers.
 
@@ -92,36 +92,6 @@ tokenizer.load('../path_to_model')  # loads the model
 text = "My name is Alan"
 print(tokenizer.encode(text))  # encoder
 print(tokenizer.decode(tokenizer.encode(text)))  # decoder
-```
-
-## Word level
----
-still to build    self.vocab_size = len(self.chars)
-    self.string_to_index = { ch:i for i,ch in enumerate(self.chars) }
-    self.index_to_string = { i:ch for i,ch in enumerate(self.chars) }
-
-  def _build_vocab(self, merges):
-    vocab = {i: ids for i, ids in enumerate(self.chars)}
-    for (p0, p1), idx in merges.items():
-      vocab[idx] = vocab[p0] + vocab[p1]
-    return vocab
-
-  def train(self, target_vocab):
-    tokens = list(self._encode(self.train_data))
-    ids = list(tokens)
-    n_merges = target_vocab - self.vocab_size
-    merges = {}
-    for i in tqdm(range(n_merges), desc='Training the tokenizer\t'):
-      stats = self._get_stats(ids)
-      pair = max(stats, key=stats.get)
-      idx = self.vocab_size + i
-      ids = self._merge(ids, pair, idx)
-      merges[pair] = idx
-    self.vocab = self._build_vocab(merges)
-    self.merges = merges
-   return self.vocab, self.merges
-
-# ... continued
 ```
 
 ## Word level
