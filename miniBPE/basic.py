@@ -129,7 +129,6 @@ class BasicTokenizer:
       This is inspired (but not equivalent to!) sentencepiece's model saving:
       - model file is the critical one, intended for load()
       - vocab file is just a pretty printed version for human inspection only
-      ## not suitable to be called, has some issues
     """
     file_name = prefix + '.model'
     with open(file_name, 'w', encoding='utf-8') as f:
@@ -143,7 +142,6 @@ class BasicTokenizer:
     """
       loads '.model' file
       returns vocab loaded from the file
-      ## not suitable to be called, has some issues
     """
     assert model_file.endswith('.model')
     merges = {}
