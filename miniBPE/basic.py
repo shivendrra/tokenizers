@@ -65,8 +65,7 @@ class BasicTokenizer:
   def train(self, target_vocab):
     tokens = list(self._encode(self.train_data))
     ids = list(tokens)
-
-    n_merges = target_vocab - self.vocab_size
+    n_merges = target_vocab
     merges = {}
     for i in tqdm(range(n_merges), desc='Training the tokenizer\t'):
       stats = self._get_stats(ids)
@@ -77,7 +76,6 @@ class BasicTokenizer:
     
     self.vocab = self._build_vocab(merges)
     self.merges = merges
-    return self.vocab, self.merges
 
   def _train_merge(self, merge_idx):
     stats = self._get_stats(self.ids)
