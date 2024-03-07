@@ -8,18 +8,16 @@
 from tqdm import tqdm
 import multiprocessing
 import json
+import time
 import os
 current_dir = os.path.dirname(os.path.realpath(__file__))
 os.chdir(current_dir)
 
 class BasicTokenizer:
-  def __init__(self, train_text):
+  def __init__(self):
     super().__init__()
-    self.chars = sorted(list(set(train_text)))
-    self.train_data = train_text
-    self.vocab_size = len(self.chars)
-    self.string_to_index = { ch:i for i,ch in enumerate(self.chars) }
-    self.index_to_string = { i:ch for i,ch in enumerate(self.chars) }
+    self.chars = []
+    self.vocab_size = 0
 
   def _encode(self, string):
     encoded = [self.string_to_index[char] for char in string]
@@ -63,20 +61,38 @@ class BasicTokenizer:
 
     return vocab
   
-  def train(self, target_vocab):
+  def init_var(self, train_text=None):
+    self.chars = sorted(list(set(train_text))) if train_text is not None else self.chars
+    print(self.chars)
+    self.train_data = train_text
+    self.vocab_size = len(self.chars)
+    self.string_to_index = { ch:i for i,ch in enumerate(self.chars) }
+    self.index_to_string = { i:ch for i,ch in enumerate(self.chars) }
+
+  def train(self, train_data, target_vocab):
+    self.init_var(train_data)
     tokens = list(self._encode(self.train_data))
     ids = list(tokens)
     n_merges = target_vocab
+    
     merges = {}
+    iteration_times = []
+
     for i in tqdm(range(n_merges), desc='Training the tokenizer\t'):
+      start_time = time.time()
+      
       stats = self._get_stats(ids)
       pair = max(stats, key=stats.get)
       idx = self.vocab_size + i
       ids = self._merge(ids, pair, idx)
       merges[pair] = idx
+      
+      iteration_times.append((time.time() - start_time))
     
     self.vocab = self._build_vocab(merges)
     self.merges = merges
+    
+    return iteration_times
 
   def _train_merge(self, merge_idx):
     stats = self._get_stats(self.ids)
@@ -132,6 +148,7 @@ class BasicTokenizer:
     file_name = prefix + '.model'
     with open(file_name, 'w', encoding='utf-8') as f:
       f.write("minibpe v1\n")
+      f.write(f"chars: {self.chars}\n\n")
       for idx1, idx2 in tqdm(self.merges, desc='Saving model\t\t', unit='merge'):
         f.write(f"{idx1} {idx2}\n")
 
@@ -153,10 +170,24 @@ class BasicTokenizer:
       version = f.readline().strip()
       assert version == "minibpe v1"
       for line in tqdm(f, desc='Loading model\t\t'):
-        idx1, idx2 = map(int, line.split())
+        if line.startswith('chars:'):
+          self.chars = line.split(':')[1].strip().strip('[]').split(', ')
+          print(self.chars)
+          continue
+
+        tokens = line.split()
+        if len(tokens) != 2:
+          continue  # Skip lines that do not contain two integers
+
+        idx1, idx2 = map(int, tokens)
         merges[(idx1, idx2)] = idx
         idx += 1
-      
+
+        # idx1, idx2 = map(int, line.split())
+        # merges[(idx1, idx2)] = idx
+        # idx += 1
+      self.chars = [char.strip("'") for char in self.chars]
+      self.init_var()
       self.merges = merges
       self.vocab = self._build_vocab(self.merges)
     
