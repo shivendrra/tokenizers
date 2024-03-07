@@ -32,19 +32,21 @@ import timeit
 os.makedirs('../models', exist_ok=True)
 
 time01 = timeit.default_timer()
-# with open('../train files/training_data.txt', 'r', encoding='utf-8') as f:
 with open('../captions.txt', 'r', encoding='utf-8') as f:
   train_text = f.read()
 time02 = timeit.default_timer()
+
+print(f"total of {(len(train_text))/1e6:.2f} million words")
 print(f"file opened in {((time02 - time01) / 60):.2f} mins")
 print('loading file....')
-name = '../models/basicCharMap'
+
+name = '../models/base10K'
 tokenizer = BasicTokenizer(train_text)
-tokenizer.train(target_vocab=4000)
+tokenizer.train(target_vocab=10000)
 tokenizer.save_model(name)
 time03 = timeit.default_timer()
 
-print(f'total time taken: {(time03 - time01)/60} mins')
+print(f'total time taken: {((time03 - time01)/3600):.2f} hrs')
 print(text==tokenizer.decode(tokenizer.encode(text)))
 
 # text = """

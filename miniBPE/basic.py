@@ -7,6 +7,7 @@
 
 from tqdm import tqdm
 import multiprocessing
+import json
 import os
 current_dir = os.path.dirname(os.path.realpath(__file__))
 os.chdir(current_dir)
@@ -126,13 +127,17 @@ class BasicTokenizer:
       Saves two files: file_prefix.vocab and file_prefix.model
       This is inspired (but not equivalent to!) sentencepiece's model saving:
       - model file is the critical one, intended for load()
-      - vocab file is just a pretty printed version for human inspection only
+      - vocab file is just a json version for human inspection only
     """
     file_name = prefix + '.model'
     with open(file_name, 'w', encoding='utf-8') as f:
       f.write("minibpe v1\n")
       for idx1, idx2 in tqdm(self.merges, desc='Saving model\t\t', unit='merge'):
         f.write(f"{idx1} {idx2}\n")
+
+    vocab_file = prefix + '_vocab.json'
+    with open(vocab_file, 'w') as f:
+      json.dump(self.vocab, f)
 
     print(f'file saved successfully!')
 
@@ -155,4 +160,8 @@ class BasicTokenizer:
       self.merges = merges
       self.vocab = self._build_vocab(self.merges)
     
+    # vocab_file = prefix + '_vocab.json'
+    # with open(vocab_file, 'r') as f:
+    #   vocab = json.load(f)
+
     return self.vocab, self.merges
