@@ -39,24 +39,13 @@ os.makedirs('../models', exist_ok=True)
 
 name = '../models/base30K'
 tokenizer = BasicTokenizer()
-# iter_time = tokenizer.train(text, target_vocab=300)
-# tokenizer.save_model(name)
-tokenizer.load_model('../models/base30k.model')
+iter_time = tokenizer.train(text, target_vocab=300)
+tokenizer.save_model(name)
+tokenizer.load_model('../models/base30k')
 
 text2 = 'can I talk to you, I wanted to tell you something'
-print(tokenizer.encode(text2))
-print(tokenizer.decode(tokenizer.encode(text2)))
-
-# with open('../iter_time.txt', 'w', encoding='utf-8') as f:
-#   f.write(iter_time)
-
-# import matplotlib as plt
-
-# plt.plot(10000, iter_time)
-# plt.xlabel('Iteration')
-# plt.ylabel('Time (s)')
-# plt.title('Iteration Time')
-# plt.show()
+print("encoded: \n",tokenizer.encode(text2))
+print("decoded: \n", tokenizer.decode(tokenizer.encode(text2)))
 
 # text = """
 # - Hmm. Two clear indicators that your recruiter is a criminal. I'm sorry, baby bro. I know how much you love pianos. - I already gave the guy the $500. I sent him a payment digitally. (footsteps knock) - Here, Jordan, why don't you come with me?
