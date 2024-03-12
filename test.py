@@ -31,17 +31,17 @@ from miniBPE import BasicTokenizer
 import timeit
 os.makedirs('../models', exist_ok=True)
 
-# with open('../captions.txt', 'r', encoding='utf-8') as f:
-#   train_text = f.read()
+with open('../captions.txt', 'r', encoding='utf-8') as f:
+  train_text = f.read()
 
-# print(f"total of {(len(train_text))/1e6:.2f} million words")
-# print('loading file....')
+print(f"total of {(len(train_text))/1e6:.2f} million words")
+print('loading file....')
 
-name = '../models/base30K'
+name = '../models/base5K'
 tokenizer = BasicTokenizer()
-iter_time = tokenizer.train(text, target_vocab=300)
+iter_time = tokenizer.train(train_text, target_vocab=5000)
 tokenizer.save_model(name)
-tokenizer.load_model('../models/base30k')
+# tokenizer.load_model('../models/base5k.model')
 
 text2 = 'can I talk to you, I wanted to tell you something'
 print("encoded: \n",tokenizer.encode(text2))

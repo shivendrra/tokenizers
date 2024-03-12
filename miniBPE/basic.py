@@ -4,6 +4,7 @@
   --> save/load works properly
 """
 
+import json
 from tqdm import tqdm
 import os
 current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -94,12 +95,23 @@ class BasicTokenizer:
 
   def save_model(self, prefix):
     """
-      saves all the merges in .model file
+      --> saves all the merges in .model file
+      --> saves a separate vocab.json file for human interpretation of the built vocab
     """
     model_file = prefix + '.model'
     with open(model_file, 'w') as f:
       for idx1, idx2 in self.merges:
         f.write(f"{idx1} {idx2}\n")
+    
+    vocab_file = prefix + '_vocab.json'
+    with open(vocab_file, 'w') as f:
+      serializable_vocab = {}
+      for idx in self.vocab:
+        try:
+          serializable_vocab[idx] = str(self.vocab[idx], 'utf-8')
+        except UnicodeDecodeError:
+          pass
+      json.dump(serializable_vocab, f)
   
   def load_model(self, model_file):
     """
