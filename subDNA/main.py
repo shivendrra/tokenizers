@@ -50,13 +50,13 @@ class DNAtokenizer:
     return {i: ids for i, ids in enumerate(self.chars)}
 
   def train(self, train_data, target_vocab):
-    self.chars = sorted(list(set(train_data)))
     vocab = self._build_vocab()
-    
     tokens = self._encode(train_data)
     ids = list(tokens)
+    
     merges = {}
-    for i in tqdm(range(target_vocab), desc='Training the tokenizer\t'):
+    n_merges = target_vocab - self.vocab_size + 1
+    for i in tqdm(range(n_merges), desc='Training the tokenizer\t'):
       stats = self._get_stats(ids)
       pair = max(stats, key=stats.get)
       idx = self.vocab_size + i
@@ -69,6 +69,21 @@ class DNAtokenizer:
     self.vocab = vocab
     self.merges = merges
     self.vocab_size = len(vocab)
+  
+  def continue_train(self, train_data, n_merges):
+    tokens = self._encode(train_data)
+    ids = list(tokens)
+    for i in tqdm(range(n_merges), desc='Training continue'):
+      stats = self._get_stats(ids)
+      pair = max(stats, key=stats.get)
+      idx = self.vocab_size + i
+      ids = self._merge(ids, pair, idx)
+      self.merges[pair] = idx
+    
+    for (p0, p1), idx in self.merges.items():
+      self.vocab[idx] = self.vocab[p0] + self.vocab[p1]
+    
+    self.vocab_size = len(self.vocab)
   
   def encode(self, text):
     tokens = self._encode(text)
@@ -115,3 +130,4 @@ class DNAtokenizer:
     
     self.merges = merges
     self.vocab = vocab
+    self.vocab_size = len(self.vocab)

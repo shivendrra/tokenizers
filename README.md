@@ -97,3 +97,38 @@ print(tokenizer.decode(tokenizer.encode(text)))  # decoder
 ## Word level
 ---
 still to build
+
+## DNA tokenizer (sub-word)
+It is a sub-word/sequence tokenizer. Works kind of similar to the bpe-tokenizer but has some extra functions.
+
+### How to use:
+
+```python
+from subDNA import DNAtokenizer
+
+token = DNAtokenizer()
+token.train(train_data=data, target_vocab=100)
+token.save_model(model_prefix='path_to_model')
+
+sample = 'CCTCCTGCCTGGAACATCAGGCTCCATGTTCTTTGGCTTTTAGAC'
+print(token.encode(sample))
+print(token.decode(token.encode(sample)))
+```
+
+One more feature is there, if you want to train it in many iterations like transformers, you can use `continue_train()` function, to keep increasing the size of vocab with your needs.
+
+```python
+from subDNA import DNAtokenizer
+
+token = DNAtokenizer()
+token.load_model(model_path='path_to_model')
+token.continue_train(train_data=data, n_merges=200)
+token.save_model(model_prefix='path_to_model')
+```
+
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+Please make sure to update tests as appropriate.
+
+## License
+none for now!
