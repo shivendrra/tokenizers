@@ -3,7 +3,6 @@
 This repository contains per-character, sub-word and word level tokenizers.
 
 ## Per-Character
----
 `PerCharTokenizer()` in `perChar` directory contains a character level tokenizer. It's very simple to understand and use. Each unique character present in the `train_data` builds the vocab for the tokenizer.
 Not very reliable for big projects, only good for training small models for experimentation.
 
@@ -34,7 +33,6 @@ print(tokenizer.decode(tokenizer.encode(text)))
 ```
 
 ## Sub-word
----
 A byte-pair encoding tokenizer, with a little different architecture. Instead of using `'utf-8'` encodings for the initial vocab of size 256, it uses the all the unique characters present in a data set for the initial vocab which means `vocab_size` can be larger or smaller than 256 at first. Then it adds rest of the pairs and merges vocab like usual byte-pair encoder.
 
 ``` python
@@ -95,7 +93,6 @@ print(tokenizer.decode(tokenizer.encode(text)))  # decoder
 ```
 
 ## Word level
----
 still to build
 
 ## DNA tokenizer (sub-word)
