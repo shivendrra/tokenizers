@@ -2,6 +2,8 @@ import os
 current_dir = os.path.dirname(os.path.realpath(__file__))
 os.chdir(current_dir)
 
+from tqdm import tqdm
+
 class DNAtokenizer:
   def __init__(self):
     super().__init__()
@@ -46,7 +48,59 @@ class DNAtokenizer:
         new_ids.append(ids[i])
         i += 1
     return new_ids
-  
-  def train(self, train_data, vocab_size):
+
+  def _build_vocab(self):
+    return {i: ids for i, ids in enumerate(self.chars)}
+
+  def train(self, train_data, target_vocab):
+    self.chars = sorted(list(set(train_data)))
+    self.string_to_index = {ch: i for i, ch in enumerate(self.chars)}
+    self.index_to_string = {i: ch for i, ch in enumerate(self.chars)}
+    vocab = self._build_vocab()
+    vocab_size = len(vocab)
     
-    pass
+    tokens = self._encode(train_data)
+    ids = list(tokens)
+    merges = {}
+    for i in tqdm(range(target_vocab), desc='Training the tokenizer\t'):
+      stats = self._get_stats(ids)
+      pair = max(stats, key=stats.get)
+      idx = vocab_size + i
+      ids = self._merge(ids, pair, idx)
+      merges[pair] = idx
+    
+    for (p0, p1), idx in merges.items():
+      vocab[idx] = vocab[p0] + vocab[p1]
+    
+    self.vocab = vocab
+    self.merges = merges
+    self.vocab_size = len(self.vocab)
+    return self.vocab, self.merges
+  
+  def encode(self, text):
+    tokens = self._encode(text)
+    ids = list(tokens)
+    while len(ids) >= 2:
+      stats = self._get_stats(ids)
+      pair = min(stats, key=lambda p: self.merges.get(p, float('inf')))
+      if pair not in self.merges:
+        break
+
+      idx = self.merges[pair]
+      ids = self._merge(ids, pair, idx)
+    return ids
+
+  def decode(self, ids):
+    tokens = ''.join(self.vocab[idx] for idx in ids)
+    seq = self._decode(tokens)
+    return seq
+
+with open('../train files/new_dna_1.txt', 'r', encoding='utf-8') as f:
+  data = f.read()
+
+token = DNAtokenizer()
+vocab, size = token.train(data, 200)
+
+sample = 'AAACGCTCACCGTAATGGTCAGCCAGAGTGTTGAACGTCTTGATTCGCTTGACGCTGCTG'
+print(token.encode(sample))
+print(sample == token.decode(token.encode(sample)))
