@@ -1,18 +1,15 @@
-import os
-current_dir = os.path.dirname(os.path.realpath(__file__))
-os.chdir(current_dir)
-
 from tqdm import tqdm
+import json
 
 class DNAtokenizer:
   def __init__(self):
     super().__init__()
-    self.vocab_size = 0
-    self.chars = []
-    self.vocab = {}
+    self.chars = ["\n", "A", "C", "G", "T"]
+    self.vocab_size = len(self.chars)
     self.merges = {}
-    self.string_to_index = { ch:i for i,ch in enumerate(self.chars) }
-    self.index_to_string = { i:ch for i,ch in enumerate(self.chars) }
+    self.vocab = {}
+    self.string_to_index = {char: idx for idx, char in enumerate(self.chars)}
+    self.index_to_string = {idx: char for idx, char in enumerate(self.chars)}
   
   def _encode(self, string):
     encoded = [self.string_to_index[char] for char in string]
@@ -54,10 +51,7 @@ class DNAtokenizer:
 
   def train(self, train_data, target_vocab):
     self.chars = sorted(list(set(train_data)))
-    self.string_to_index = {ch: i for i, ch in enumerate(self.chars)}
-    self.index_to_string = {i: ch for i, ch in enumerate(self.chars)}
     vocab = self._build_vocab()
-    vocab_size = len(vocab)
     
     tokens = self._encode(train_data)
     ids = list(tokens)
@@ -65,7 +59,7 @@ class DNAtokenizer:
     for i in tqdm(range(target_vocab), desc='Training the tokenizer\t'):
       stats = self._get_stats(ids)
       pair = max(stats, key=stats.get)
-      idx = vocab_size + i
+      idx = self.vocab_size + i
       ids = self._merge(ids, pair, idx)
       merges[pair] = idx
     
@@ -74,8 +68,7 @@ class DNAtokenizer:
     
     self.vocab = vocab
     self.merges = merges
-    self.vocab_size = len(self.vocab)
-    return self.vocab, self.merges
+    self.vocab_size = len(vocab)
   
   def encode(self, text):
     tokens = self._encode(text)
@@ -90,17 +83,35 @@ class DNAtokenizer:
       ids = self._merge(ids, pair, idx)
     return ids
 
-  def decode(self, ids):
-    tokens = ''.join(self.vocab[idx] for idx in ids)
-    seq = self._decode(tokens)
-    return seq
+  def decode(self, de_text):
+    tokens = [self.vocab[idx] for idx in de_text]
+    text = ''.join(tokens)
+    return text
+  
+  def save_model(self, model_prefix):
+    model_file = model_prefix + '.model'
+    with open(model_file, 'w', encoding='utf-8') as fwrite:
+      for ids1, ids2 in self.merges:
+        fwrite.write(f"{ids1} {ids2}\n")
+    vocab_file = model_prefix + '_vocab.json'
+    with open(vocab_file, 'w') as f:
+      json.dump(self.vocab, f)
+    print('model file saved successfully!')
 
-with open('../train files/new_dna_1.txt', 'r', encoding='utf-8') as f:
-  data = f.read()
+  def load_model(self, model_path):
+    assert model_path.endswith('.model')
 
-token = DNAtokenizer()
-vocab, size = token.train(data, 200)
+    merges = {}
+    idx = self.vocab_size
+    with open(model_path, 'r', encoding='utf-8') as fread:
+      for line in fread:
+        idx1, idx2 = map(int, line.split())
+        merges[(idx1, idx2)] = idx
+        idx += 1
+    vocab = self._build_vocab()
 
-sample = 'AAACGCTCACCGTAATGGTCAGCCAGAGTGTTGAACGTCTTGATTCGCTTGACGCTGCTG'
-print(token.encode(sample))
-print(sample == token.decode(token.encode(sample)))
+    for (p0, p1), idx in merges.items():
+      vocab[idx] = vocab[p0] + vocab[p1]
+    
+    self.merges = merges
+    self.vocab = vocab
