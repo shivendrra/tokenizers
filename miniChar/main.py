@@ -41,6 +41,14 @@ class PerCharTokenizer:
     self.vocab = self._build_vocab()
   
   def save_model(self, prefix):
+    """
+      - basic save_model() funtion, saves one file, '.model'
+      - '.model' contains all the final merges, each on next line
+
+      Args:
+        prefix (str): prefix along with the path
+        self.merges (dict): contains final merges
+    """
     file_name = prefix + '.model'
     with open(file_name, 'w', encoding='utf-8') as f:
       f.write("per-char v1\n")
@@ -49,6 +57,14 @@ class PerCharTokenizer:
     print("file saved successfully!!")
   
   def load(self, model_path):
+    """
+      - loads the '.model' file
+      - re-writes the merges in the new merges dict
+      - builds the vocab again for further use
+
+      Args:
+        model_path (str): path to the '.model' file
+    """
     assert model_path.endswith('.model')
     vocab = {}
     with open(model_path, 'r', encoding='utf-8') as f:

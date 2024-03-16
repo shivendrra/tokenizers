@@ -45,6 +45,12 @@ class BasicTokenizer:
     return new_ids
   
   def _build_vocab(self, merges):
+    """
+      - takes merges after training or loading
+      - builds the new vocab by merging the merge values together
+      - returns the vocab
+    """
+
     vocab = {idx: bytes([idx]) for idx in range(256)}
     for (p0, p1), idx in merges.items():
       vocab[idx] = vocab[p0] + vocab[p1]
@@ -76,6 +82,15 @@ class BasicTokenizer:
     return self.vocab, self.merges
   
   def encode(self, text):
+    """
+      - takes in the input string, encodes it using 'utf-8' encodings
+      - fetches merges from saved or loaded merges
+      - returns the merges
+      
+      Args:
+        train_data (str): string of dna sequence
+        self.merges (dictonary): contains merges
+    """
     text_bytes = text.encode('utf-8')
     ids = list(text_bytes)
     while len(ids) >= 2:
@@ -89,14 +104,29 @@ class BasicTokenizer:
     return ids
   
   def decode(self, ids):
+    """
+      - takes in the input list
+      - fetches the index from the vocab and joins the value
+      - decodes the 'utf-8' tokens into string and returns it
+      
+      Args:
+        train_data (list[int]): list containing integers
+        self.vocab (dictonary): contains final vocab
+    """
     text_bytes = b"".join(self.vocab[idx] for idx in ids)
     text = text_bytes.decode('utf-8', errors='replace')
     return text
 
   def save_model(self, prefix):
     """
-      --> saves all the merges in .model file
-      --> saves a separate vocab.json file for human interpretation of the built vocab
+      - basic save_model() funtion, saves two files, '.model' & 'vocab.json'
+      - '.model' contains all the final merges, each on next line
+      - 'vocab.json' contains the final vocab, for human interpretation
+
+      Args:
+        prefix (str): prefix along with the path
+        self.merges (dict): contains final merges
+        self.vocab (dict): contains final vocab
     """
     model_file = prefix + '.model'
     with open(model_file, 'w') as f:
@@ -115,8 +145,12 @@ class BasicTokenizer:
   
   def load_model(self, model_file):
     """
-      --> loads the saved model file
-      --> re-builds the merges and vocab for later use
+      - loads the '.model' file
+      - re-writes the merges in the new merges dict
+      - builds the vocab again for further use
+
+      Args:
+        model_path (str): path to the '.model' file
     """
     assert model_file.endswith('.model')
 

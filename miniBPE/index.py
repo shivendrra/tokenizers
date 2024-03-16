@@ -72,6 +72,11 @@ class Tokenizer:
     return text
   
   def _build_vocab(self, merges):
+    """
+      - takes merges after training or loading
+      - builds the new vocab by merging the merge values together
+      - returns the vocab
+    """
     init_vocab = {i: ids for i, ids in enumerate(self.chars)}
     for (p0, p1), idx in merges.items():
       init_vocab[idx] = init_vocab[p0] + init_vocab[p1]
@@ -112,20 +117,3 @@ class Tokenizer:
     with open(vocab_file, 'r') as f:
       vocab = json.load(f)
     self.vocab = {int(k): v for k, v in vocab.items()}
-
-tokenizer = Tokenizer()
-tokenizer.load_model('../models/base30k')
-print("chars: ", tokenizer.chars)
-
-text = 'can I talk to you, I wanted to tell you something'
-print("encoded: \n", tokenizer.encode(text))
-print("decoded: \n", tokenizer.decode(tokenizer.encode(text)))
-
-import tiktoken
-
-tokenizer = tiktoken.get_encoding("cl100k_base")
-tokenizer = tiktoken.encoding_for_model("gpt-3.5-turbo")
-
-text = "Hello, nice to meet you"
-
-tokenizer.encode(text)

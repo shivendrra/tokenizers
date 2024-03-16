@@ -162,6 +162,15 @@ class DNAtokenizer:
     return ids
 
   def decode(self, de_text):
+    """
+      - takes in the input list
+      - fetches the index from the vocab and makes a list of tokens
+      - decodes the tokens into string and returns it
+      
+      Args:
+        train_data (list[int]): list containing integers
+        self.vocab (dictonary): contains final vocab
+    """
     tokens = [self.vocab[idx] for idx in de_text]
     text = ''.join(tokens)
     return text
@@ -169,8 +178,8 @@ class DNAtokenizer:
   def save_model(self, model_prefix):
     """
       - basic save_model() funtion, saves two files, '.model' & 'vocab.json'
-      - '.model' contians all the final merges, each on next line
-      - 'vocab.json' contians the final vocab, for human interpretation
+      - '.model' contains all the final merges, each on next line
+      - 'vocab.json' contains the final vocab, for human interpretation
 
       Args:
         model_prefix (str): prefix along with the path

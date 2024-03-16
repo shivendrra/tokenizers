@@ -1,3 +1,8 @@
+"""
+  from karpathy's minBPE
+  doesn't works properly, have to fix it
+"""
+
 import regex as re
 import os
 current_dir = os.path.dirname(os.path.realpath(__file__))
