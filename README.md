@@ -95,21 +95,20 @@ print(tokenizer.decode(tokenizer.encode(text)))  # decoder
 ## Word level
 still to build
 
-## DNA tokenizer (sub-word)
-It is a sub-word/sequence tokenizer. Works kind of similar to the bpe-tokenizer but has some extra functions.
+## DNA tokenizer (k-mers)
+Let's say we have a long sequence of DNA. This tokenizer splits that sequence into sections of consecutively occurring bases, and each section has length of value equal to k_mer which is by default set to 4. This way, the vocab formed will be equal to {`k_mers^(no. of unique characters)`}
 
 ### How to use:
 
 ```python
-from subDNA import DNAtokenizer
+from tokenizer import KMerTokenizer
 
-token = DNAtokenizer()
-token.train(train_data=data, target_vocab=100)
-token.save_model(model_prefix='path_to_model')
+tokenizer = KMerTokenizer(k_mers=5)
+tokenizer.build_vocab([train_data])
+tokenizer.save_model('../tokenizer/trained models')
 
-sample = 'CCTCCTGCCTGGAACATCAGGCTCCATGTTCTTTGGCTTTTAGAC'
-print(token.encode(sample))
-print(token.decode(token.encode(sample)))
+encoded_tokens = tokenizer.encode(test_data)
+decoded_tokens = tokenizer.decode(encoded_tokens)
 ```
 
 One more feature is there, if you want to train it in many iterations like transformers, you can use `continue_train()` function, to keep increasing the size of vocab with your needs.
